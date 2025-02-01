@@ -2,7 +2,7 @@ import spacy
 import re
 from urllib.parse import unquote
 import urllib.parse
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import requests
 import sqlite3
 import rdflib
@@ -259,6 +259,77 @@ def convert_to_rdf():
 def get_news():
     data = get_json_data()
     return jsonify(data)
+
+
+@app.route('/news-page', methods=['GET'])
+def get_news_page():
+    skip = request.args.get('skip', default=None, type=int)
+    take = request.args.get('take', default=None, type=int)
+
+    if skip is None and take is None:
+        data = get_json_data()
+    else:
+        skip = skip if skip is not None else 0
+        take = take if take is not None else 10
+        data = get_json_data(skip, take)
+
+    return jsonify(data)
+
+
+def get_json_data(skip=0, take=10):
+    conn = sqlite3.connect('news.db')
+    cursor = conn.cursor()
+
+    response = []
+
+    cursor.execute('SELECT id, title, description, url, source, date, author, content FROM news LIMIT ? OFFSET ?',
+                   (take, skip) if take else ())
+    news_articles = cursor.fetchall()
+
+    for news_id, title, description, url, source, date, author, content in news_articles:
+
+        topics = extract_topics(description)
+        item_topics = []
+        if topics is not None:
+            for topic in topics:
+                item_topics.append(topic)
+
+        cursor.execute('SELECT url FROM multimedia WHERE news_id=?', (news_id,))
+        multimedia_files = cursor.fetchall()
+        multimedia_list = []
+        for media_url, in multimedia_files:
+            if media_url is not None:
+                multimedia_list.append(media_url)
+
+        cursor.execute('SELECT topic, link FROM dbpedia_topics WHERE news_id=?', (news_id,))
+        dbpedia_topics = cursor.fetchall()
+        dbpedia_topics_list = []
+        for topic, link in dbpedia_topics:
+            dbpedia_item = {
+                "topic": topic,
+                "dbpedia_url": link
+            }
+            dbpedia_topics_list.append(dbpedia_item)
+
+        item = {
+            "news_id": news_id,
+            "title": title,
+            "description": description,
+            "author": author,
+            "content": content,
+            "url": url,
+            "source": source,
+            "date": date,
+            "topics": item_topics,
+            "multimedia": multimedia_list,
+            "dbpedia_topics": dbpedia_topics_list
+        }
+
+        response.append(item)
+
+    conn.close()
+
+    return response
 
 
 @app.route('/news/<int:news_id>', methods=['GET'])
