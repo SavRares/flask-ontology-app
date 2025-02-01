@@ -17,6 +17,7 @@ app = Flask(__name__)
 
 CORS(app)
 
+
 def extract_entities(text):
     if text is None:
         return
@@ -46,6 +47,9 @@ def fetch_news(api_key, country='us', category='general'):
 def scrape_multimedia(article_url):
     print(f"Scraping for multimedia from {article_url}")
     multimedia = []
+    if article_url == "https://www.wzzm13.com/article/news/health/visitor-restrictions-mi-hospitals-surge-respiratory-illnesses/69-04827464-31dc-4e35-9c9a-eed9c90d3417" \
+            or article_url == "https://www.wbir.com/article/news/local/tennessee-house-passes-amended-universal-school-voucher-bill/51-10d2cbf2-c8bc-4dae-a1f0-cca50d5ab8bc":
+        return multimedia
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -92,7 +96,7 @@ def store_news_in_db(articles):
     cursor = conn.cursor()
 
     cursor.execute('''CREATE TABLE IF NOT EXISTS news (
-                        id INTEGER PRIMARY KEY, title TEXT, description TEXT, url TEXT, source TEXT, date TEXT, author, content TEXT)
+                        id INTEGER PRIMARY KEY, title TEXT, description TEXT, url TEXT, source TEXT, date TEXT, author, content, prev_img TEXT)
                    ''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS multimedia (
                         id INTEGER PRIMARY KEY, news_id INTEGER, url TEXT)
@@ -104,16 +108,15 @@ def store_news_in_db(articles):
     print("Tables created")
 
     for article in articles:
-        cursor.execute('''INSERT INTO news (title, description, url, source, date, author, content)
-                          VALUES (?, ?, ?, ?, ?, ?, ?)''',
+        cursor.execute('''INSERT INTO news (title, description, url, source, date, author, content, prev_img)
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
                        (article['title'], article['description'], article['url'], article['source']['name'],
-                        article['publishedAt'], article['author'], article['content']))
+                        article['publishedAt'], article['author'], article['content'], article['urlToImage']))
         news_id = cursor.lastrowid
 
         multimedia_links = scrape_multimedia(article['url'])
         for media in multimedia_links:
             cursor.execute('INSERT INTO multimedia (news_id, url) VALUES (?, ?)', (news_id, media))
-
 
         entities = extract_entities(article["description"])
 
@@ -123,7 +126,7 @@ def store_news_in_db(articles):
                 if links:
                     for link in links:
                         cursor.execute('INSERT INTO dbpedia_topics (news_id, topic, link) VALUES (?, ?, ?)',
-                                    (news_id, topic[0], link))
+                                       (news_id, topic[0], link))
 
     conn.commit()
     conn.close()
@@ -135,10 +138,10 @@ def get_json_data():
 
     response = []
 
-    cursor.execute('SELECT id, title, description, url, source, date, author, content FROM news')
+    cursor.execute('SELECT id, title, description, url, source, date, author, content, prev_img FROM news')
     news_articles = cursor.fetchall()
 
-    for news_id, title, description, url, source, date, author, content in news_articles:
+    for news_id, title, description, url, source, date, author, content, prev_img in news_articles:
 
         topics = extract_topics(description)
         item_topics = []
@@ -173,17 +176,16 @@ def get_json_data():
             "source": source,
             "date": date,
             "topics": item_topics,
+            "preview_img": prev_img,
             "multimedia": multimedia_list,
             "dbpedia_topics": dbpedia_topics_list
         }
 
         response.append(item)
 
-
     conn.close()
 
     return response
-
 
 
 def convert_to_rdf():
@@ -206,10 +208,10 @@ def convert_to_rdf():
     conn = sqlite3.connect('news.db')
     cursor = conn.cursor()
 
-    cursor.execute('SELECT id, title, description, url, source, date, author, content FROM news')
+    cursor.execute('SELECT id, title, description, url, source, date, author, content, prev_img FROM news')
     news_articles = cursor.fetchall()
 
-    for news_id, title, description, url, source, date, author, content in news_articles:
+    for news_id, title, description, url, source, date, author, content, prev_img in news_articles:
         article_uri = ns[f'news{news_id}']
 
         cleaned_url = unquote(url)
@@ -222,6 +224,8 @@ def convert_to_rdf():
         g.add((article_uri, DCTERMS.date, rdflib.Literal(date)))
         g.add((article_uri, DCTERMS.author, rdflib.Literal(author)))
         g.add((article_uri, DCTERMS.content, rdflib.Literal(content)))
+        encoded_prev_img = urllib.parse.quote(prev_img, safe=":/")
+        g.add((article_uri, DCTERMS.preview, rdflib.URIRef(encoded_prev_img)))
         g.add((article_uri, DCTERMS.identifier, rdflib.URIRef(cleaned_url)))
 
         topics = extract_topics(description)
@@ -271,22 +275,23 @@ def get_news_page():
     else:
         skip = skip if skip is not None else 0
         take = take if take is not None else 10
-        data = get_json_data(skip, take)
+        data = get_json_data_page(skip, take)
 
     return jsonify(data)
 
 
-def get_json_data(skip=0, take=10):
+def get_json_data_page(skip=0, take=10):
     conn = sqlite3.connect('news.db')
     cursor = conn.cursor()
 
     response = []
 
-    cursor.execute('SELECT id, title, description, url, source, date, author, content FROM news LIMIT ? OFFSET ?',
-                   (take, skip) if take else ())
+    cursor.execute(
+        'SELECT id, title, description, url, source, date, author, content, prev_img FROM news LIMIT ? OFFSET ?',
+        (take, skip) if take else ())
     news_articles = cursor.fetchall()
 
-    for news_id, title, description, url, source, date, author, content in news_articles:
+    for news_id, title, description, url, source, date, author, content, prev_img in news_articles:
 
         topics = extract_topics(description)
         item_topics = []
@@ -321,6 +326,7 @@ def get_json_data(skip=0, take=10):
             "source": source,
             "date": date,
             "topics": item_topics,
+            "preview_img": prev_img,
             "multimedia": multimedia_list,
             "dbpedia_topics": dbpedia_topics_list
         }
@@ -337,13 +343,14 @@ def get_news_by_id(news_id):
     conn = sqlite3.connect('news.db')
     cursor = conn.cursor()
 
-    cursor.execute('SELECT id, title, description, url, source, date, author, content FROM news WHERE id=?', (news_id,))
+    cursor.execute('SELECT id, title, description, url, source, date, author, content, prev_img FROM news WHERE id=?',
+                   (news_id,))
     news = cursor.fetchone()
 
     if not news:
         return jsonify({"error": "News not found"}), 404
 
-    news_id, title, description, url, source, date, author, content = news
+    news_id, title, description, url, source, date, author, content, prev_img = news
 
     topics = extract_topics(description)
 
@@ -365,6 +372,7 @@ def get_news_by_id(news_id):
         "source": source,
         "date": date,
         "topics": topics,
+        "preview_img": prev_img,
         "multimedia": multimedia_files,
         "dbpedia_topics": dbpedia_topics
     })
@@ -412,13 +420,14 @@ def get_news_rdf_by_id(news_id):
     conn = sqlite3.connect('news.db')
     cursor = conn.cursor()
 
-    cursor.execute('SELECT id, title, description, url, source, date, author, content FROM news WHERE id=?', (news_id,))
+    cursor.execute('SELECT id, title, description, url, source, date, author, content, prev_img FROM news WHERE id=?',
+                   (news_id,))
     news = cursor.fetchone()
 
     if not news:
         return jsonify({"error": "News not found"}), 404
 
-    news_id, title, description, url, source, date, author, content = news
+    news_id, title, description, url, source, date, author, content, prev_img = news
     article_uri = ns[f'news{news_id}']
 
     cleaned_url = unquote(url)
@@ -431,6 +440,9 @@ def get_news_rdf_by_id(news_id):
     g.add((article_uri, DCTERMS.date, rdflib.Literal(date)))
     g.add((article_uri, DCTERMS.author, rdflib.Literal(author)))
     g.add((article_uri, DCTERMS.content, rdflib.Literal(content)))
+    encoded_prev_img = urllib.parse.quote(prev_img, safe=":/")
+    prev_img_uri = rdflib.URIRef(prev_img)
+    g.add((prev_img_uri, DCTERMS.preview, rdflib.URIRef(encoded_prev_img)))
     g.add((article_uri, DCTERMS.identifier, rdflib.URIRef(cleaned_url)))
 
     topics = extract_topics(description)
@@ -461,11 +473,15 @@ def get_news_rdf_by_id(news_id):
 if __name__ == "__main__":
     # print("Starting")
     # API_KEY = "db3dcce0159647cd9292d9df2942c8a3"
-    # news_data = fetch_news(API_KEY, 'de')
-    # print(news_data)
-    # print("News fetched")
-    # store_news_in_db(news_data['articles'])
-    # print("DB created")
+    # for item in ["general", "sports", "science", "technology", "health", "business"]:
+    #     print("------------------------------------------------------------")
+    #     print(f"Starting {item}")
+    #     news_data = fetch_news(API_KEY, 'us', item)
+    #     print(news_data)
+    #     print("News fetched")
+    #     store_news_in_db(news_data['articles'])
+    #     print("DB created")
+
     # convert_to_rdf()
     # print("Data saved and converted to RDF!")
 
