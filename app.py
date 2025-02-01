@@ -395,4 +395,4 @@ if __name__ == "__main__":
     # convert_to_rdf()
     # print("Data saved and converted to RDF!")
 
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

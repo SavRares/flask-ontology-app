@@ -1,0 +1,289 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv/"
+     xml:base="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv/"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:itpc="http://iptc.org/"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:schema="http://schema.org/"
+     xmlns:NewsProv="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#">
+    <owl:Ontology rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv"/>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Object Properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasAuthor -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasAuthor">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Author"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasLanguage -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasLanguage">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Language"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasMediaContent -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasMediaContent">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#MediaContent"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasProvenance -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasProvenance">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Provenance"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasPublisher -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasPublisher">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topObjectProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Publisher"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasTopic -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#hasTopic">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Topic"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Data properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#creationDate -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#creationDate">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Provenance"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#headline -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#headline">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#languageCode -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#languageCode">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Language"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#summary -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#summary">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#wordCount -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#wordCount">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Classes
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Author -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Author"/>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#BlogPost -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#BlogPost">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#CreationDate -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#CreationDate">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Provenance"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Editorial -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Editorial">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Image -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Image">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#MediaContent"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Language -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Language"/>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#License -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#License">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Provenance"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#MediaContent -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#MediaContent"/>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Provenance -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Provenance"/>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Publisher -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Publisher"/>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Source -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Source">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Provenance"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Topic -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Topic"/>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Video -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Video">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#MediaContent"/>
+    </owl:Class>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Individuals
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#ArticleTest -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#ArticleTest">
+        <rdf:type rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#NewsArticle"/>
+        <NewsProv:hasAuthor rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#John_Smith"/>
+        <NewsProv:headline>Test Article</NewsProv:headline>
+        <NewsProv:summary>Everything will be known</NewsProv:summary>
+        <NewsProv:wordCount rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">4</NewsProv:wordCount>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#English -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#English">
+        <rdf:type rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Language"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#John_Smith -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#John_Smith">
+        <rdf:type rdf:resource="http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#Author"/>
+    </owl:NamedIndividual>
+</rdf:RDF>
+
+
+
+<!-- Generated by the OWL API (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi -->
+
