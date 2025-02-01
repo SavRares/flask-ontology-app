@@ -8,6 +8,7 @@ import sqlite3
 import rdflib
 from bs4 import BeautifulSoup
 from SPARQLWrapper import SPARQLWrapper, JSON
+import os
 
 nlp = spacy.load("en_core_web_sm")
 
