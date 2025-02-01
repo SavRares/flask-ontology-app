@@ -9,11 +9,13 @@ import rdflib
 from bs4 import BeautifulSoup
 from SPARQLWrapper import SPARQLWrapper, JSON
 import os
+from flask_cors import CORS
 
 nlp = spacy.load("en_core_web_sm")
 
 app = Flask(__name__)
 
+CORS(app)
 
 def extract_entities(text):
     if text is None:
