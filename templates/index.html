@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" prefix="schema: http://schema.org/">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.title }}</title>
+</head>
+<body>
+
+    <article vocab="http://schema.org/" typeof="NewsArticle">
+        <h1 property="headline">{{ data.title }}</h1>
+        <img property="image" src="{{ data.preview_img }}" alt="Article Image" width="400">
+        <p>Source: <span property="publisher" typeof="Organization"><span property="name">{{ data.source }}</span></span></p>
+        <p>Author: <span property="author">{{ data.author }}</span></p>
+        <p>Date Published: <time property="datePublished" datetime="{{ data.date }}">{{ data.date }}</time></p>
+        <p property="description">{{ data.description }}</p>
+
+        <section>
+            <h2>Related Topics</h2>
+            <ul>
+                {% for topic in data.dbpedia_topics %}
+                <li><a property="about" href="{{ topic.dbpedia_url }}">{{ topic.topic }}</a></li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section>
+            <h2>Related Multimedia</h2>
+            <ul>
+                {% for item in data.multimedia %}
+                <li><a property="about" href="{{ item }}">{{ item }}</a></li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <p><a property="mainEntityOfPage" href="{{ data.url }}">Read more</a></p>
+    </article>
+
+</body>
+</html>

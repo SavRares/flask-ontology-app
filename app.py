@@ -1,8 +1,8 @@
 import spacy
 import re
-from urllib.parse import unquote, quote
+from urllib.parse import unquote, quote, urlparse
 import urllib.parse
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import requests
 import sqlite3
 import rdflib
@@ -399,6 +399,56 @@ def get_news_by_id(news_id):
     })
 
 
+@app.route("/news_rdfa/<int:news_id>", methods=['GET'])
+def get_rdfa(news_id):
+    conn = sqlite3.connect('news.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT id, title, description, url, source, date, author, content, prev_img FROM news WHERE id=?',
+                   (news_id,))
+    news = cursor.fetchone()
+
+    if not news:
+        return jsonify({"error": "News not found"}), 404
+
+    news_id, title, description, url, source, date, author, content, prev_img = news
+
+    topics = extract_topics(description)
+
+    cursor.execute('SELECT url FROM multimedia WHERE news_id=?', (news_id,))
+    multimedia_files = [media[0] for media in cursor.fetchall()]
+
+
+    real_multimedia = []
+
+    for item in multimedia_files:
+        if item:
+            real_multimedia.append(item)
+
+
+    cursor.execute('SELECT topic, link FROM dbpedia_topics WHERE news_id=?', (news_id,))
+    dbpedia_topics = [{"topic": topic, "dbpedia_url": link} for topic, link in cursor.fetchall()]
+
+    conn.close()
+
+    data = {
+        "news_id": news_id,
+        "title": title,
+        "description": description,
+        "author": author,
+        "content": content,
+        "url": url,
+        "source": source,
+        "date": date,
+        "topics": topics,
+        "preview_img": prev_img,
+        "multimedia": real_multimedia,
+        "dbpedia_topics": dbpedia_topics
+    }
+
+    return render_template("index.html", data=data)
+
+
 def get_news_by_topic(topic):
     conn = sqlite3.connect('news.db')
     cursor = conn.cursor()
@@ -626,11 +676,12 @@ def get_news_rdf_by_id_xml(news_id):
 
 FUSEKI_ENDPOINT = "https://fuseki-sparql.onrender.com/news/sparql"
 
+
 @app.route('/sparql', methods=['POST'])
 def sparql_query():
     """
     Endpoint to handle SPARQL queries.
-    Expects a JSON payload with a 'query' field and optionally 'format' ('json', 'xml', 'json-ld', 'rdf').
+    Expects a JSON payload with a 'query' field and optionally 'format' ('json', 'xml', 'json-ld', 'rdfa').
     """
     try:
         # Get the SPARQL query from the request
@@ -649,30 +700,61 @@ def sparql_query():
             sparql.setReturnFormat(JSONLD)
         elif response_format == 'json':
             sparql.setReturnFormat(JSON)
-        elif response_format == 'rdf':
-            sparql.setReturnFormat(RDF)
+        elif response_format == 'rdfa':
+            sparql.setReturnFormat(JSON)  # Get results in JSON and process separately
         else:
             return jsonify({"error": "Unsupported format"}), 400
 
         # Execute query
         results = sparql.query().convert()
 
-        # Convert RDF Graph results to JSON-LD
-        if isinstance(results, Graph):
+        if response_format == 'rdfa':
+            news_links = []
+
+            # Check if results contain bindings
+            if "results" in results and "bindings" in results["results"]:
+                for binding in results["results"]["bindings"]:
+                    # Look for the 'news' field in the binding
+                    if "news" in binding:
+                        news_uri = binding["news"]["value"]
+
+                        # Parse the URI to extract the news_id (after #)
+                        parsed_uri = urlparse(news_uri)
+                        news_id_with_prefix = parsed_uri.fragment  # This gets the part after the '#' symbol
+
+                        # Extract the number after #news
+                        if news_id_with_prefix.startswith("news"):
+                            news_id = news_id_with_prefix[4:]  # Remove "news" prefix to get the number
+
+                            # Generate the link if news_id is found
+                            if news_id:
+                                news_links.append(f"https://flask-ontology-app.onrender.com/news_rdfa/{news_id}")
+
+            if not news_links:
+                news_links = "No news_id found in query results."
+
+            return jsonify({
+                "source": FUSEKI_ENDPOINT,
+                "news_rdfa_links": news_links
+            }), 200
+
+        elif isinstance(results, Graph):  # Handling JSON-LD
             jsonld_output = results.serialize(format='json-ld', indent=2)
-            # Now parse and simplify the structure for readability
             import json
             jsonld_data = json.loads(jsonld_output)
+
+            # Simplify structure
             for result in jsonld_data:
-                # Flatten 'author' and 'name' if they are objects with @value
                 if 'https://schema.org/author' in result:
                     result['https://schema.org/author'] = result['https://schema.org/author'][0]['@value']
                 if 'https://schema.org/name' in result:
                     result['https://schema.org/name'] = result['https://schema.org/name'][0]['@value']
+
             return jsonify({
                 "source": FUSEKI_ENDPOINT,
                 "results": jsonld_data
             }), 200
+
         else:
             return jsonify({
                 "source": FUSEKI_ENDPOINT,
@@ -684,6 +766,7 @@ def sparql_query():
             "error": str(e),
             "source": FUSEKI_ENDPOINT
         }), 500
+
 
 if __name__ == "__main__":
 
