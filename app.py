@@ -400,39 +400,69 @@ def get_news_by_id(news_id):
 
 
 def get_news_by_topic(topic):
-    # Connect to your SQLite database (replace with your actual database file path)
     conn = sqlite3.connect('news.db')
     cursor = conn.cursor()
 
-    # Query to fetch all news_id where the topic matches
     cursor.execute('''
         SELECT news_id FROM dbpedia_topics WHERE topic = ?
     ''', (topic,))
 
-    # Fetch all results
     results = cursor.fetchall()
 
-    # Close the connection
+    response = []
+    seen_ids = []
+
+    for result in results:
+        cursor.execute(
+            'SELECT DISTINCT id, title, description, url, source, date, author, content, prev_img FROM news WHERE id=?',
+            (result[0],))
+        news = cursor.fetchall()
+
+        for news_id, title, description, url, source, date, author, content, prev_img in news:
+
+            if news_id in seen_ids:
+                continue
+
+            seen_ids.append(news_id)
+
+            topics = extract_topics(description)
+
+            cursor.execute('SELECT url FROM multimedia WHERE news_id=?', (news_id,))
+            multimedia_files = [media[0] for media in cursor.fetchall()]
+
+            cursor.execute('SELECT topic, link FROM dbpedia_topics WHERE news_id=?', (news_id,))
+            dbpedia_topics = [{"topic": topic, "dbpedia_url": link} for topic, link in cursor.fetchall()]
+
+            response_item = {
+                "news_id": news_id,
+                "title": title,
+                "description": description,
+                "author": author,
+                "content": content,
+                "url": url,
+                "source": source,
+                "date": date,
+                "topics": topics,
+                "preview_img": prev_img,
+                "multimedia": multimedia_files,
+                "dbpedia_topics": dbpedia_topics
+            }
+
+            response.append(response_item)
+
     conn.close()
 
-    # Extract news_id from the results (convert to a list)
-    news_ids = [result[0] for result in results]
-
-    return news_ids
+    return response
 
 
-# Define the route for the GET request for topics
 @app.route('/topics/<topic>', methods=['GET'])
 def get_topic(topic):
-    # Get news ids for the topic from the database
     news_ids = get_news_by_topic(topic)
 
-    # If no news found, return a 404 error
     if not news_ids:
         return jsonify({"message": "No news found for the given topic"}), 404
 
-    # Return the list of news ids as JSON
-    return jsonify({"topic": topic, "news_ids": news_ids})
+    return jsonify({"topic": topic, "news_list": news_ids})
 
 
 @app.route('/recommend/<int:news_id>', methods=['GET'])
