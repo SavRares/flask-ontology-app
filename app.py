@@ -12,10 +12,12 @@ from bs4 import BeautifulSoup
 from SPARQLWrapper import SPARQLWrapper, JSON, XML, JSONLD
 import os
 from flask_cors import CORS
+from flasgger import Swagger
 
 nlp = spacy.load("en_core_web_sm")
 
 app = Flask(__name__)
+Swagger(app)
 
 CORS(app)
 
@@ -195,10 +197,8 @@ def get_json_data():
 def convert_to_rdf():
     print("Starting RDF conversion...")
 
-    # Initialize RDF graph
     g = rdflib.Graph()
 
-    # Define namespaces
     DCTERMS = Namespace("http://purl.org/dc/terms/")
     IPTC = Namespace("http://iptc.org/std/Iptc4xmpCore/")
     FOAF = Namespace("http://xmlns.com/foaf/0.1/")
@@ -206,18 +206,15 @@ def convert_to_rdf():
     ssw = Namespace("http://www.socialsemanticweb.org/ns/")
     ns = Namespace("http://www.semanticweb.org/raressavin/ontologies/2025/0/NewsProv#")
 
-    # Bind namespaces
     g.bind("dc", DCTERMS)
     g.bind("iptc", IPTC)
     g.bind("foaf", FOAF)
     g.bind("dbpedia", DBPEDIA)
     g.bind("news", ns)
 
-    # Connect to SQLite database
     conn = sqlite3.connect('news.db')
     cursor = conn.cursor()
 
-    # Select all news articles
     cursor.execute('SELECT id, title, description, url, source, date, author, content, prev_img FROM news')
     news_articles = cursor.fetchall()
 
@@ -225,11 +222,9 @@ def convert_to_rdf():
 
         article_uri = ns[f'news{news_id}']
 
-        # Clean the URL and handle escape characters
         cleaned_url = unquote(url)
         cleaned_url = re.sub(r'\\\\u003d', '=', cleaned_url)
 
-        # Add RDF triples to the graph
         g.add((article_uri, RDF.type, ns.NewsArticle))
         g.add((article_uri, DCTERMS.title, Literal(title)))
         g.add((article_uri, DCTERMS.description, Literal(description)))
@@ -244,13 +239,11 @@ def convert_to_rdf():
 
         g.add((article_uri, DCTERMS.identifier, URIRef(cleaned_url)))
 
-        # Extract and add topics (if any)
         topics = extract_topics(description)
         if topics is not None:
             for topic in topics:
                 g.add((article_uri, ssw.topic, Literal(topic)))
 
-        # Add multimedia files (if any)
         cursor.execute('SELECT url FROM multimedia WHERE news_id=?', (news_id,))
         multimedia_files = cursor.fetchall()
         for media_url, in multimedia_files:
@@ -263,7 +256,6 @@ def convert_to_rdf():
                 g.add((media_uri, DCTERMS.identifier, URIRef(encoded_url)))
                 g.add((article_uri, DCTERMS.hasPart, media_uri))
 
-        # Add DBpedia topics (if any)
         cursor.execute('SELECT topic, link FROM dbpedia_topics WHERE news_id=?', (news_id,))
         dbpedia_topics = cursor.fetchall()
         for topic, link in dbpedia_topics:
@@ -274,7 +266,6 @@ def convert_to_rdf():
 
     conn.close()
 
-    # Serialize the RDF graph to XML/RDF format
     g.serialize("newsDCMI.rdf", format="xml")
 
     print("RDF conversion completed. Data saved to 'newsDCMI.rdf'.")
@@ -282,12 +273,35 @@ def convert_to_rdf():
 
 @app.route('/news', methods=['GET'])
 def get_news():
+    """
+        Retrieve all news articles.
+        ---
+        responses:
+          200:
+            description: A list of news articles
+    """
     data = get_json_data()
     return jsonify(data)
 
 
 @app.route('/news-page', methods=['GET'])
 def get_news_page():
+    """
+       Retrieve paginated news articles.
+       ---
+       parameters:
+         - name: skip
+           in: query
+           type: integer
+           required: false
+         - name: take
+           in: query
+           type: integer
+           required: false
+       responses:
+         200:
+           description: A paginated list of news articles
+    """
     skip = request.args.get('skip', default=None, type=int)
     take = request.args.get('take', default=None, type=int)
 
@@ -361,6 +375,20 @@ def get_json_data_page(skip=0, take=10):
 
 @app.route('/news/<int:news_id>', methods=['GET'])
 def get_news_by_id(news_id):
+    """
+        Retrieve a news article by ID.
+        ---
+        parameters:
+          - name: news_id
+            in: path
+            type: integer
+            required: true
+        responses:
+          200:
+            description: A news article
+          404:
+            description: News not found
+    """
     conn = sqlite3.connect('news.db')
     cursor = conn.cursor()
 
@@ -401,6 +429,20 @@ def get_news_by_id(news_id):
 
 @app.route("/news_rdfa/<int:news_id>", methods=['GET'])
 def get_rdfa(news_id):
+    """
+        Retrieve a news article in RDFa format.
+        ---
+        parameters:
+          - name: news_id
+            in: path
+            type: integer
+            required: true
+        responses:
+          200:
+            description: RDFa formatted news article
+          404:
+            description: News not found
+    """
     conn = sqlite3.connect('news.db')
     cursor = conn.cursor()
 
@@ -507,6 +549,20 @@ def get_news_by_topic(topic):
 
 @app.route('/topics/<topic>', methods=['GET'])
 def get_topic(topic):
+    """
+        Retrieve news articles by topic.
+        ---
+        parameters:
+          - name: topic
+            in: path
+            type: string
+            required: true
+        responses:
+          200:
+            description: A list of news articles related to the topic
+          404:
+            description: No news found for the given topic
+    """
     news_ids = get_news_by_topic(topic)
 
     if not news_ids:
@@ -517,6 +573,20 @@ def get_topic(topic):
 
 @app.route('/recommend/<int:news_id>', methods=['GET'])
 def recommend_news(news_id):
+    """
+        Get recommended news articles based on a given news article.
+        ---
+        parameters:
+          - name: news_id
+            in: path
+            type: integer
+            required: true
+        responses:
+          200:
+            description: A list of recommended news articles
+          404:
+            description: News not found
+    """
     conn = sqlite3.connect('news.db')
     cursor = conn.cursor()
 
@@ -541,9 +611,22 @@ def recommend_news(news_id):
 
 @app.route('/news_rdf_turtle/<int:news_id>', methods=['GET'])
 def get_news_rdf_by_id(news_id):
+    """
+    Retrieve a news article in RDF Turtle format.
+    ---
+    parameters:
+      - name: news_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: RDF Turtle formatted news article
+      404:
+        description: News not found
+    """
     g = rdflib.Graph()
 
-    # Define namespaces
     DCTERMS = rdflib.Namespace("http://purl.org/dc/terms/")
     IPTC = rdflib.Namespace("http://iptc.org/std/Iptc4xmpCore/")
     DBPEDIA = rdflib.Namespace("http://dbpedia.org/resource/")
@@ -608,9 +691,22 @@ def get_news_rdf_by_id(news_id):
 
 @app.route('/news_rdf_xml/<int:news_id>', methods=['GET'])
 def get_news_rdf_by_id_xml(news_id):
+    """
+        Retrieve a news article in RDF XML format.
+        ---
+        parameters:
+          - name: news_id
+            in: path
+            type: integer
+            required: true
+        responses:
+          200:
+            description: RDF XML formatted news article
+          404:
+            description: News not found
+    """
     g = rdflib.Graph()
 
-    # Define namespaces
     DCTERMS = rdflib.Namespace("http://purl.org/dc/terms/")
     IPTC = rdflib.Namespace("http://iptc.org/std/Iptc4xmpCore/")
     DBPEDIA = rdflib.Namespace("http://dbpedia.org/resource/")
@@ -680,53 +776,75 @@ FUSEKI_ENDPOINT = "https://fuseki-sparql.onrender.com/news/sparql"
 @app.route('/sparql', methods=['POST'])
 def sparql_query():
     """
-    Endpoint to handle SPARQL queries.
-    Expects a JSON payload with a 'query' field and optionally 'format' ('json', 'xml', 'json-ld', 'rdfa').
-    """
+            Execute a SPARQL query.
+            ---
+            tags:
+              - SPARQL
+            parameters:
+              - name: query
+                in: body
+                required: true
+                schema:
+                  type: object
+                  properties:
+                    query:
+                      type: string
+                      description: SPARQL query string
+                    format:
+                      type: string
+                      description: Response format (json, json-ld, rdfa)
+                      enum: [json, json-ld, rdfa]
+            responses:
+              200:
+                description: Query executed successfully
+                schema:
+                  type: object
+                  properties:
+                    source:
+                      type: string
+                    results:
+                      type: object
+              400:
+                description: Bad request (missing query or unsupported format)
+              500:
+                description: Internal server error
+            """
     try:
-        # Get the SPARQL query from the request
         data = request.get_json()
         if not data or 'query' not in data:
             return jsonify({"error": "No query provided"}), 400
 
         query = data['query']
-        response_format = data.get('format', 'json')  # Default to JSON
+        response_format = data.get('format', 'json')
 
         sparql = SPARQLWrapper(FUSEKI_ENDPOINT)
         sparql.setQuery(query)
 
-        # Set return format
         if response_format == 'json-ld':
             sparql.setReturnFormat(JSONLD)
         elif response_format == 'json':
             sparql.setReturnFormat(JSON)
         elif response_format == 'rdfa':
-            sparql.setReturnFormat(JSON)  # Get results in JSON and process separately
+            sparql.setReturnFormat(JSON)
         else:
             return jsonify({"error": "Unsupported format"}), 400
 
-        # Execute query
         results = sparql.query().convert()
 
         if response_format == 'rdfa':
             news_links = []
 
-            # Check if results contain bindings
             if "results" in results and "bindings" in results["results"]:
                 for binding in results["results"]["bindings"]:
-                    # Look for the 'news' field in the binding
                     if "news" in binding:
                         news_uri = binding["news"]["value"]
 
-                        # Parse the URI to extract the news_id (after #)
                         parsed_uri = urlparse(news_uri)
-                        news_id_with_prefix = parsed_uri.fragment  # This gets the part after the '#' symbol
+                        news_id_with_prefix = parsed_uri.fragment
 
-                        # Extract the number after #news
                         if news_id_with_prefix.startswith("news"):
-                            news_id = news_id_with_prefix[4:]  # Remove "news" prefix to get the number
+                            news_id = news_id_with_prefix[4:]
 
-                            # Generate the link if news_id is found
                             if news_id:
                                 news_links.append(f"https://flask-ontology-app.onrender.com/news_rdfa/{news_id}")
 
@@ -738,12 +856,11 @@ def sparql_query():
                 "news_rdfa_links": news_links
             }), 200
 
-        elif isinstance(results, Graph):  # Handling JSON-LD
+        elif isinstance(results, Graph):
             jsonld_output = results.serialize(format='json-ld', indent=2)
             import json
             jsonld_data = json.loads(jsonld_output)
 
-            # Simplify structure
             for result in jsonld_data:
                 if 'https://schema.org/author' in result:
                     result['https://schema.org/author'] = result['https://schema.org/author'][0]['@value']
